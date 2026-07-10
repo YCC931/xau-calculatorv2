@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>XAU hoseh 交易计算器</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #eef2fa;
+    --panel: #ffffff;
+    --panel-2: #f4f6fb;
+    --line: #dde3f0;
+    --gold: #14224f;
+    --gold-dim: #5b6690;
+    --text: #14224f;
+    --text-dim: #6b7591;
+    --long: #1f9d55;
+    --short: #d64545;
+    --danger: #d6362c;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(20,34,79,0.08), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', sans-serif;
+    padding:28px 16px 60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;flex-wrap:wrap;}
+  header .bar{width:4px;height:26px;background:var(--gold);border-radius:2px;}
+  h1{font-size:22px;margin:0;font-weight:700;letter-spacing:0.2px;}
+  .sub{color:var(--text-dim);font-size:13px;font-family:'JetBrains Mono',monospace;}
+
+  /* ---- news banner ---- */
+  .news{
+    border:1px solid var(--line);
+    background:var(--panel);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:20px;
+  }
+  .news.alert{border-color:var(--danger);background:linear-gradient(180deg, rgba(214,54,44,0.10), rgba(214,54,44,0.03));}
+  .news-head{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);margin-bottom:8px;font-family:'JetBrains Mono',monospace;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--long);flex:none;}
+  .news.alert .dot{background:var(--danger);animation:pulse 1.2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .news-alert-text{font-size:14px;font-weight:600;color:var(--danger);margin-bottom:6px;}
+  .news-list{display:flex;flex-wrap:wrap;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;}
+  .news-chip{
+    border:1px solid var(--line);
+    padding:4px 9px;
+    border-radius:20px;
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+  .news-chip.soon{border-color:var(--danger);color:var(--danger);}
+  .news-empty{color:var(--text-dim);font-size:13px;font-family:'JetBrains Mono',monospace;}
+
+  /* ---- layout ---- */
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start;}
+  @media (max-width:880px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:0 2px 14px rgba(20,34,79,0.06);
+  }
+  .card + .card{margin-top:16px;}
+  .card h2{
+    font-size:12px;text-transform:uppercase;letter-spacing:1.2px;
+    color:var(--gold-dim);margin:0 0 14px;font-weight:600;
+    display:flex;align-items:center;gap:8px;
+  }
+  .card h2::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  label{display:block;font-size:12.5px;color:var(--text-dim);margin:14px 0 6px;}
+  label:first-of-type{margin-top:0;}
+  input[type=number], input[type=text]{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--text);padding:9px 10px;border-radius:7px;font-size:14px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  input:focus{outline:none;border-color:var(--gold-dim);}
+
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip-btn{
+    flex:1;min-width:56px;
+    background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
+    padding:9px 8px;border-radius:7px;font-size:13px;cursor:pointer;
+    font-family:'JetBrains Mono',monospace;transition:all .12s;
+  }
+  .chip-btn:hover{border-color:var(--gold-dim);color:var(--text);}
+  .chip-btn.active{background:var(--gold);border-color:var(--gold);color:#ffffff;font-weight:700;}
+  .chip-btn.long.active{background:var(--long);border-color:var(--long);color:#ffffff;}
+  .chip-btn.short.active{background:var(--short);border-color:var(--short);color:#ffffff;}
+
+  .calc-btn{
+    width:100%;margin-top:20px;padding:13px;border:none;border-radius:8px;
+    background:var(--gold);color:#ffffff;font-weight:700;font-size:14.5px;
+    cursor:pointer;letter-spacing:0.3px;
+    font-family:'Space Grotesk',sans-serif;
+  }
+  .calc-btn:hover{filter:brightness(1.15);}
+  .calc-btn:disabled{background:#c7cede;color:#8a92ab;cursor:not-allowed;}
+
+  .hint{font-size:11.5px;color:var(--text-dim);margin-top:4px;line-height:1.5;}
+
+  /* ---- results ---- */
+  .res-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:640px){.res-grid{grid-template-columns:1fr;}}
+  .row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:8px 0;border-bottom:1px dashed var(--line);font-size:13.5px;
+  }
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--text-dim);}
+  .row .v{font-family:'JetBrains Mono',monospace;font-weight:600;}
+  .v.pos{color:var(--long);}
+  .v.neg{color:var(--short);}
+  .v.gold{color:var(--gold);}
+  .dir-tag{
+    display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:700;
+    font-family:'JetBrains Mono',monospace;letter-spacing:0.5px;
+  }
+  .dir-tag.long{background:rgba(31,157,85,0.14);color:var(--long);}
+  .dir-tag.short{background:rgba(214,69,69,0.14);color:var(--short);}
+
+  .empty-state{color:var(--text-dim);font-size:13.5px;text-align:center;padding:30px 10px;}
+  footer{text-align:center;color:var(--text-dim);font-size:11.5px;margin-top:26px;font-family:'JetBrains Mono',monospace;}
+
+  /* ---- advanced / collapsible preset info ---- */
+  details.adv{margin-top:14px;}
+  details.adv summary{
+    cursor:pointer;font-size:12px;color:var(--text-dim);list-style:none;
+    display:flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;
+    padding:8px 0;border-top:1px solid var(--line);
+  }
+  details.adv summary::-webkit-details-marker{display:none;}
+  details.adv summary::before{content:"▸";color:var(--gold-dim);transition:transform .15s;}
+  details.adv[open] summary::before{transform:rotate(90deg);}
+  details.adv .adv-body{padding-top:10px;}
+  .preset-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .preset-pill{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
+    padding:5px 11px;font-size:11.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;
+  }
+  .preset-pill b{color:var(--text);font-weight:600;}
+
+  /* ---- sub panel (split / hedge groupings) ---- */
+  .subpanel{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    padding:13px 14px;margin-top:14px;
+  }
+  .subpanel-title{font-size:11.5px;color:var(--gold-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;}
+  .subpanel label{margin-top:10px;}
+  .subpanel label:first-of-type{margin-top:0;}
+
+  /* ---- stat tiles for results ---- */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .stat-tile{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    padding:14px;
+  }
+  .stat-tile .stat-label{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;}
+  .stat-tile .stat-value{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;}
+  .stat-tile .stat-value.pos{color:var(--long);}
+  .stat-tile .stat-value.neg{color:var(--short);}
+  .stat-tile .stat-value.gold{color:var(--gold);}
+  .stat-tile.wide{grid-column:1/-1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="bar"></div>
+    <h1>XAU hoseh 交易计算器</h1>
+    <span class="sub">v2 · fundingpips</span>
+  </header>
+
+  <div class="news" id="newsBanner">
+    <div class="news-head"><span class="dot"></span><span id="newsHeadText">正在读取 Forex Factory 今日新闻…</span></div>
+    <div id="newsAlertText"></div>
+    <div class="news-list" id="newsList"></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT: INPUTS -->
+    <div>
+      <div class="card">
+        <h2>档位 Tier</h2>
+        <div class="btn-row">
+          <button class="chip-btn active" data-tier="1.1">1.1</button>
+          <button class="chip-btn" data-tier="1.2">1.2</button>
+          <button class="chip-btn" data-tier="2.1">2.1</button>
+          <button class="chip-btn" data-tier="2.2">2.2</button>
+        </div>
+
+        <div class="preset-strip" id="presetStrip"></div>
+
+        <div id="tpFixedWrap" class="subpanel">
+          <div class="subpanel-title">止盈目标</div>
+          <label>止盈目标 TP (USDT)</label>
+          <input type="number" id="tpTargetFixed" value="5510">
+        </div>
+
+        <div id="splitWrap" class="subpanel" style="display:none;">
+          <div class="subpanel-title">止盈目标（自动计算）</div>
+          <div id="walletBalWrap" style="display:none;">
+            <label>钱包余额 Wallet Balance (USDT)</label>
+            <input type="number" id="walletBal" value="90000">
+            <div class="hint">余额低于100,000时，需要先补回差额，净利润才开始计算</div>
+          </div>
+          <label>净利润目标 Net Profit (USDT)</label>
+          <input type="number" id="netProfit" value="3000">
+          <label>分成 Split</label>
+          <div class="btn-row">
+            <button class="chip-btn split-btn active" data-ratio="0.6">周结<br>60%</button>
+            <button class="chip-btn split-btn" data-ratio="0.8">双周<br>80%</button>
+            <button class="chip-btn split-btn" data-ratio="1.0">月结<br>100%</button>
+            <button class="chip-btn split-btn" data-ratio="0.9">按需<br>90%</button>
+          </div>
+          <div class="hint" id="tpDerivedHint">需要在 XAU 账户打到的毛止盈目标：<b id="tpDerivedVal">-</b> USDT</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>交易参数</h2>
+        <label>方向</label>
+        <div class="btn-row">
+          <button class="chip-btn long active" data-dir="long">LONG</button>
+          <button class="chip-btn short" data-dir="short">SHORT</button>
+        </div>
+
+        <label>进场价格</label>
+        <input type="number" id="entry" value="2350" step="0.01">
+
+        <label>止损点数 CL Points</label>
+        <input type="number" id="clPoints" value="10" step="0.1">
+        <div class="hint" id="clPriceHint">止损价将自动计算</div>
+
+        <button class="calc-btn" id="calcBtn">计算 CALCULATE</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div>
+      <div class="card">
+        <h2>XAU Calculator 结果</h2>
+        <div id="xauResults"><div class="empty-state">填好参数后点击"计算"</div></div>
+      </div>
+
+      <div class="card">
+        <h2>X Exchange 结果</h2>
+        <div id="xResults"><div class="empty-state">填好参数后点击"计算"</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>数据仅供参考 · 新闻数据来自 Fair Economy (Forex Factory 同源数据)</footer>
+</div>
+
+<script>
+// ---------------- Presets ----------------
+const presets = {
+  '1.1': {cost:550, maxDD:6, damageCost:2.5, tp:5510, split:false},
+  '1.2': {cost:550, maxDD:6, damageCost:2.5, tp:4510, split:false},
+  '2.1': {cost:550, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:false},
+  '2.2': {cost:550, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:true},
+};
+let currentTier = '1.1';
+let currentDir = 'long';
+let currentSplitRatio = 0.6;
+
+const WALLET = 100000;
+const FEE_FF = 5;      // fundingpips fee per lot
+const FEE_X = 6;       // X exchange fee per lot
+const CONTRACT = 100;  // XAU contract size per lot
+
+function fmt(n){ if(!isFinite(n)) return '-'; return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function xTargetFor(p){
+  return p.cost * (p.damageCost / p.maxDD);
+}
+
+function renderPresetStrip(){
+  const p = presets[currentTier];
+  document.getElementById('presetStrip').innerHTML = `
+    <span class="preset-pill">成本 <b>${p.cost}</b> USDT</span>
+    <span class="preset-pill">Max DD <b>${p.maxDD}%</b></span>
+    <span class="preset-pill">Damage Cost <b>${p.damageCost}%</b></span>
+    <span class="preset-pill">钱包 <b>100,000</b> USDT</span>
+  `;
+}
+renderPresetStrip();
+
+// ---------------- Tier switching ----------------
+document.querySelectorAll('[data-tier]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-tier]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentTier = btn.dataset.tier;
+    const p = presets[currentTier];
+    renderPresetStrip();
+    if(p.split){
+      document.getElementById('tpFixedWrap').style.display='none';
+      document.getElementById('splitWrap').style.display='block';
+      document.getElementById('walletBalWrap').style.display = p.walletAdjusted ? 'block' : 'none';
+    } else {
+      document.getElementById('tpFixedWrap').style.display='block';
+      document.getElementById('splitWrap').style.display='none';
+      document.getElementById('tpTargetFixed').value = p.tp;
+    }
+    updateDerivedTp();
+  });
+});
+
+document.querySelectorAll('.split-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.split-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentSplitRatio = parseFloat(btn.dataset.ratio);
+    updateDerivedTp();
+  });
+});
+document.getElementById('netProfit').addEventListener('input', updateDerivedTp);
+document.getElementById('walletBal').addEventListener('input', updateDerivedTp);
+
+function updateDerivedTp(){
+  const p = presets[currentTier];
+  if(!p.split) return;
+  const net = parseFloat(document.getElementById('netProfit').value)||0;
+  let tp = net / currentSplitRatio;
+  if(p.walletAdjusted){
+    const walletBal = parseFloat(document.getElementById('walletBal').value)||0;
+    const shortfall = Math.max(0, 100000 - walletBal);
+    tp = shortfall + (net / currentSplitRatio);
+  }
+  document.getElementById('tpDerivedVal').textContent = fmt(tp);
+}
+updateDerivedTp();
+
+// ---------------- Direction ----------------
+document.querySelectorAll('[data-dir]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-dir]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentDir = btn.dataset.dir;
+    updateClHint();
+  });
+});
+document.getElementById('entry').addEventListener('input', updateClHint);
+document.getElementById('clPoints').addEventListener('input', updateClHint);
+function updateClHint(){
+  const entry = parseFloat(document.getElementById('entry').value);
+  const pts = parseFloat(document.getElementById('clPoints').value);
+  if(isFinite(entry) && isFinite(pts)){
+    const cl = currentDir==='long' ? entry-pts : entry+pts;
+    document.getElementById('clPriceHint').textContent = `止损价 = ${fmt(cl)}`;
+  }
+}
+updateClHint();
+
+// ---------------- Calculate ----------------
+document.getElementById('calcBtn').addEventListener('click', ()=>{
+  const p = presets[currentTier];
+  const damageCost = p.damageCost;
+  const entry = parseFloat(document.getElementById('entry').value);
+  const clPoints = parseFloat(document.getElementById('clPoints').value);
+  const xTarget = xTargetFor(p);
+
+  let tpTarget;
+  if(p.split){
+    const net = parseFloat(document.getElementById('netProfit').value)||0;
+    tpTarget = net / currentSplitRatio;
+    if(p.walletAdjusted){
+      const walletBal = parseFloat(document.getElementById('walletBal').value)||0;
+      const shortfall = Math.max(0, 100000 - walletBal);
+      tpTarget = shortfall + (net / currentSplitRatio);
+    }
+  } else {
+    tpTarget = parseFloat(document.getElementById('tpTargetFixed').value)||0;
+  }
+
+  if(!isFinite(entry) || !isFinite(clPoints) || clPoints<=0){
+    document.getElementById('xauResults').innerHTML = '<div class="empty-state">请填写有效的进场价格和止损点数</div>';
+    document.getElementById('xResults').innerHTML = '';
+    return;
+  }
+
+  const clPrice = currentDir==='long' ? entry-clPoints : entry+clPoints;
+  const priceDiff = Math.abs(entry-clPrice);
+  const pipsDiff = priceDiff*100;
+  const riskAmount = WALLET*damageCost/100;
+  const riskPerLot = priceDiff*CONTRACT + FEE_FF;
+  const lot = riskAmount/riskPerLot;
+  const feeTotal = lot*FEE_FF;
+  const grossProfit = tpTarget+feeTotal;
+  const priceMove = grossProfit/(lot*CONTRACT);
+  const pipsMove = priceMove*100;
+  const tpPrice = currentDir==='long' ? entry+priceMove : entry-priceMove;
+  const rr = tpTarget/riskAmount;
+
+  const dirTag = currentDir==='long' ? '<span class="dir-tag long">LONG</span>' : '<span class="dir-tag short">SHORT</span>';
+
+  document.getElementById('xauResults').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-tile"><div class="stat-label">方向</div><div class="stat-value">${dirTag}</div></div>
+      <div class="stat-tile"><div class="stat-label">应开仓位 Lot Size</div><div class="stat-value gold">${fmt(lot)} 手</div></div>
+      <div class="stat-tile"><div class="stat-label">止盈价格 TP</div><div class="stat-value pos">${fmt(tpPrice)}</div></div>
+      <div class="stat-tile"><div class="stat-label">止损价格 CL</div><div class="stat-value neg">${fmt(clPrice)}</div></div>
+    </div>
+  `;
+
+  // ---- X Exchange (mirrored hedge) ----
+  const xDir = currentDir==='long' ? 'short' : 'long';
+  const xTP = clPrice;   // mirrored
+  const xSL = tpPrice;   // mirrored
+  const xPerLotGross = Math.abs(entry-xTP)*CONTRACT;
+  const xLot = xTarget/(xPerLotGross-FEE_X);
+  const xGrossTP = xLot*xPerLotGross;
+  const xFee = xLot*FEE_X;
+  const xLossAtCL = xLot*Math.abs(entry-xSL)*CONTRACT;
+
+  const xDirTag = xDir==='long' ? '<span class="dir-tag long">LONG</span>' : '<span class="dir-tag short">SHORT</span>';
+
+  document.getElementById('xResults').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-tile wide"><div class="stat-label">推荐开仓量</div><div class="stat-value gold">${fmt(xLot)} 手</div></div>
+      <div class="stat-tile"><div class="stat-label">打到止盈 TP</div><div class="stat-value pos">${fmt(xGrossTP)} USDT</div></div>
+      <div class="stat-tile"><div class="stat-label">打到止损 CL</div><div class="stat-value neg">${fmt(xLossAtCL)} USDT</div></div>
+    </div>
+  `;
+});
+
+// ---------------- Forex Factory news (via Netlify Function once Git-deployed) ----------------
+const NEWS_WINDOW_MIN = 15;
+
+async function loadNews(){
+  const headEl = document.getElementById('newsHeadText');
+  const listEl = document.getElementById('newsList');
+  const alertEl = document.getElementById('newsAlertText');
+  const bannerEl = document.getElementById('newsBanner');
+  const calcBtn = document.getElementById('calcBtn');
+
+  const sources = [
+    '/.netlify/functions/news',
+    'https://nfs.faireconomy.media/ff_calendar_thisweek.json'
+  ];
+
+  let data = null;
+  for(const src of sources){
+    try{
+      const res = await fetch(src);
+      if(!res.ok){ console.warn('[news] non-ok from', src, res.status); continue; }
+      data = await res.json();
+      if(data){ console.info('[news] success from', src); break; }
+    } catch(err){ console.warn('[news] failed from', src, err); }
+  }
+
+  try{
+    if(!data) throw new Error('all sources failed');
+
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const todaysHigh = data.filter(e=>{
+      const cur = (e.country||e.currency||'').toUpperCase();
+      const impact = (e.impact||'').toLowerCase();
+      if(cur!=='USD' || impact!=='high') return false;
+      const d = new Date(e.date);
+      return d.toDateString()===todayStr;
+    }).map(e=>({title:e.title, time:new Date(e.date)}))
+      .sort((a,b)=>a.time-b.time);
+
+    headEl.textContent = `Forex Factory · 今日 USD 高影响新闻 (${todaysHigh.length})`;
+
+    if(todaysHigh.length===0){
+      listEl.innerHTML = '<span class="news-empty">今天没有 USD 红色高影响新闻</span>';
+    } else {
+      listEl.innerHTML = todaysHigh.map(e=>{
+        const diffMin = Math.abs(now-e.time)/60000;
+        const soon = diffMin<=NEWS_WINDOW_MIN;
+        const t = e.time.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+        return `<span class="news-chip ${soon?'soon':''}">${t} · ${e.title}</span>`;
+      }).join('');
+    }
+
+    const blocking = todaysHigh.find(e=> Math.abs(now-e.time)/60000 <= NEWS_WINDOW_MIN);
+    if(blocking){
+      bannerEl.classList.add('alert');
+      alertEl.textContent = `⚠️ ${blocking.title} 新闻发布前后${NEWS_WINDOW_MIN}分钟内，禁止开仓/平仓`;
+      calcBtn.disabled = true;
+      calcBtn.textContent = '新闻时段 · 暂停操作';
+    } else {
+      bannerEl.classList.remove('alert');
+      alertEl.textContent = '';
+      calcBtn.disabled = false;
+      calcBtn.textContent = '计算 CALCULATE';
+    }
+  } catch(err){
+    headEl.textContent = 'Forex Factory 新闻数据暂时无法读取';
+    listEl.innerHTML = '<span class="news-empty">网络受限或数据源暂不可用，请稍后刷新，或手动查看 forexfactory.com/calendar</span>';
+  }
+}
+
+loadNews();
+setInterval(loadNews, 600000); // every 10 min
+</script>
+</body>
+</html>
