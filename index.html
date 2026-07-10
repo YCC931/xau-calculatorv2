@@ -2,7 +2,7 @@
 <html lang="zh">
 <head>
 <meta charset="UTF-8">
-<title>XAU hoseh 交易计算器</title>
+<title>XAU Hoseh 交易计算器</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -135,7 +135,7 @@
   .dir-tag.short{background:rgba(214,69,69,0.14);color:var(--short);}
 
   .empty-state{color:var(--text-dim);font-size:13.5px;text-align:center;padding:30px 10px;}
-  footer{text-align:center;color:var(--text-dim);font-size:11.5px;margin-top:26px;font-family:'JetBrains Mono',monospace;}
+  footer{display:flex;justify-content:space-between;align-items:center;color:var(--text-dim);font-size:11.5px;margin-top:26px;font-family:'JetBrains Mono',monospace;flex-wrap:wrap;gap:8px;}
 
   /* ---- advanced / collapsible preset info ---- */
   details.adv{margin-top:14px;}
@@ -183,8 +183,8 @@
 
   <header>
     <div class="bar"></div>
-    <h1>XAU hoseh 交易计算器</h1>
-    <span class="sub">v2 · fundingpips</span>
+    <h1>XAU Hoseh 交易计算器</h1>
+    <span class="sub">v2</span>
   </header>
 
   <div class="news" id="newsBanner">
@@ -198,7 +198,7 @@
     <!-- LEFT: INPUTS -->
     <div>
       <div class="card">
-        <h2>档位 Tier</h2>
+        <h2>关卡 Level</h2>
         <div class="btn-row">
           <button class="chip-btn active" data-tier="1.1">1.1</button>
           <button class="chip-btn" data-tier="1.2">1.2</button>
@@ -206,7 +206,10 @@
           <button class="chip-btn" data-tier="2.2">2.2</button>
         </div>
 
-        <div class="preset-strip" id="presetStrip"></div>
+        <label style="margin-top:14px;">成本 Audition Fee (USDT)</label>
+        <input type="number" id="costInput" value="550" step="1">
+
+        <div class="preset-strip" id="presetStrip" style="margin-top:10px;"></div>
 
         <div id="tpFixedWrap" class="subpanel">
           <div class="subpanel-title">止盈目标</div>
@@ -256,19 +259,22 @@
     <!-- RIGHT: RESULTS -->
     <div>
       <div class="card">
-        <h2>XAU Calculator 结果</h2>
+        <h2>XAU Calculator</h2>
         <div id="xauResults"><div class="empty-state">填好参数后点击"计算"</div></div>
       </div>
 
       <div class="card">
-        <h2>X Exchange 结果</h2>
+        <h2>X Exchange</h2>
         <div id="xResults"><div class="empty-state">填好参数后点击"计算"</div></div>
       </div>
     </div>
 
   </div>
 
-  <footer>数据仅供参考 · 新闻数据来自 Fair Economy (Forex Factory 同源数据)</footer>
+  <footer>
+    <span>© 2024–2026 BCC. All rights reserved.</span>
+    <span>数据仅供参考 · 新闻数据来自 Forex Factory</span>
+  </footer>
 </div>
 
 <script>
@@ -290,20 +296,53 @@ const CONTRACT = 100;  // XAU contract size per lot
 
 function fmt(n){ if(!isFinite(n)) return '-'; return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-function xTargetFor(p){
-  return p.cost * (p.damageCost / p.maxDD);
+function getCost(){
+  return parseFloat(document.getElementById('costInput').value) || 0;
+}
+
+function xTargetFor(p, cost){
+  return cost * (p.damageCost / p.maxDD);
+}
+
+// For split tiers (2.1/2.2): solve the account's gross TP target (tpTarget) so that
+// the trader's REAL take-home (firm payout minus the simultaneous X Exchange hedge
+// loss at CL) equals the net profit they actually asked for.
+function computeGrossTarget(p, cost, entry, clPoints){
+  const damageCost = p.damageCost;
+  const maxDD = p.maxDD;
+  const riskAmount = WALLET*damageCost/100;
+  const riskPerLot = clPoints*CONTRACT + FEE_FF;
+  const lot = riskAmount/riskPerLot;
+  const feeTotal = lot*FEE_FF;
+
+  const xTarget = xTargetFor(p, cost);
+  const xPerLotGross = clPoints*CONTRACT;
+  const xLot = xTarget/(xPerLotGross-FEE_X);
+  const k = xLot/lot; // ratio of hedge loss to gross profit
+
+  const net = parseFloat(document.getElementById('netProfit').value)||0;
+  let shortfall = 0;
+  if(p.walletAdjusted){
+    const walletBal = parseFloat(document.getElementById('walletBal').value)||0;
+    shortfall = Math.max(0, WALLET - walletBal);
+  }
+
+  const denom = currentSplitRatio - k;
+  if(denom<=0) return NaN; // impossible configuration (hedge loss eats the whole split)
+  const G = (net - shortfall*(1-currentSplitRatio) + k*feeTotal) / denom;
+  return G;
 }
 
 function renderPresetStrip(){
   const p = presets[currentTier];
   document.getElementById('presetStrip').innerHTML = `
-    <span class="preset-pill">成本 <b>${p.cost}</b> USDT</span>
     <span class="preset-pill">Max DD <b>${p.maxDD}%</b></span>
     <span class="preset-pill">Damage Cost <b>${p.damageCost}%</b></span>
     <span class="preset-pill">钱包 <b>100,000</b> USDT</span>
   `;
 }
 renderPresetStrip();
+document.getElementById('costInput').addEventListener('input', updateDerivedTp);
 
 // ---------------- Tier switching ----------------
 document.querySelectorAll('[data-tier]').forEach(btn=>{
@@ -312,6 +351,7 @@ document.querySelectorAll('[data-tier]').forEach(btn=>{
     btn.classList.add('active');
     currentTier = btn.dataset.tier;
     const p = presets[currentTier];
+    document.getElementById('costInput').value = p.cost;
     renderPresetStrip();
     if(p.split){
       document.getElementById('tpFixedWrap').style.display='none';
@@ -340,14 +380,15 @@ document.getElementById('walletBal').addEventListener('input', updateDerivedTp);
 function updateDerivedTp(){
   const p = presets[currentTier];
   if(!p.split) return;
-  const net = parseFloat(document.getElementById('netProfit').value)||0;
-  let tp = net / currentSplitRatio;
-  if(p.walletAdjusted){
-    const walletBal = parseFloat(document.getElementById('walletBal').value)||0;
-    const shortfall = Math.max(0, 100000 - walletBal);
-    tp = shortfall + (net / currentSplitRatio);
+  const cost = getCost();
+  const entry = parseFloat(document.getElementById('entry').value);
+  const clPoints = parseFloat(document.getElementById('clPoints').value);
+  if(!isFinite(entry) || !isFinite(clPoints) || clPoints<=0){
+    document.getElementById('tpDerivedVal').textContent = '-';
+    return;
   }
-  document.getElementById('tpDerivedVal').textContent = fmt(tp);
+  const tp = computeGrossTarget(p, cost, entry, clPoints);
+  document.getElementById('tpDerivedVal').textContent = isFinite(tp) ? fmt(tp) : '⚠️ 配置无解(对冲亏损超过净利润)';
 }
 updateDerivedTp();
 
@@ -360,8 +401,8 @@ document.querySelectorAll('[data-dir]').forEach(btn=>{
     updateClHint();
   });
 });
-document.getElementById('entry').addEventListener('input', updateClHint);
-document.getElementById('clPoints').addEventListener('input', updateClHint);
+document.getElementById('entry').addEventListener('input', ()=>{ updateClHint(); updateDerivedTp(); });
+document.getElementById('clPoints').addEventListener('input', ()=>{ updateClHint(); updateDerivedTp(); });
 function updateClHint(){
   const entry = parseFloat(document.getElementById('entry').value);
   const pts = parseFloat(document.getElementById('clPoints').value);
@@ -378,23 +419,23 @@ document.getElementById('calcBtn').addEventListener('click', ()=>{
   const damageCost = p.damageCost;
   const entry = parseFloat(document.getElementById('entry').value);
   const clPoints = parseFloat(document.getElementById('clPoints').value);
-  const xTarget = xTargetFor(p);
+  const xTarget = xTargetFor(p, getCost());
 
   let tpTarget;
   if(p.split){
-    const net = parseFloat(document.getElementById('netProfit').value)||0;
-    tpTarget = net / currentSplitRatio;
-    if(p.walletAdjusted){
-      const walletBal = parseFloat(document.getElementById('walletBal').value)||0;
-      const shortfall = Math.max(0, 100000 - walletBal);
-      tpTarget = shortfall + (net / currentSplitRatio);
-    }
+    tpTarget = computeGrossTarget(p, getCost(), entry, clPoints);
   } else {
     tpTarget = parseFloat(document.getElementById('tpTargetFixed').value)||0;
   }
 
   if(!isFinite(entry) || !isFinite(clPoints) || clPoints<=0){
     document.getElementById('xauResults').innerHTML = '<div class="empty-state">请填写有效的进场价格和止损点数</div>';
+    document.getElementById('xResults').innerHTML = '';
+    return;
+  }
+
+  if(!isFinite(tpTarget)){
+    document.getElementById('xauResults').innerHTML = '<div class="empty-state">⚠️ 当前配置无解：对冲账户的止损亏损已经超过这个分成比例能给的净利润，试试调高净利润目标、换更高的分成比例，或调整止损点数</div>';
     document.getElementById('xResults').innerHTML = '';
     return;
   }
@@ -437,9 +478,9 @@ document.getElementById('calcBtn').addEventListener('click', ()=>{
 
   document.getElementById('xResults').innerHTML = `
     <div class="stat-grid">
-      <div class="stat-tile wide"><div class="stat-label">推荐开仓量</div><div class="stat-value gold">${fmt(xLot)} 手</div></div>
-      <div class="stat-tile"><div class="stat-label">打到止盈 TP</div><div class="stat-value pos">${fmt(xGrossTP)} USDT</div></div>
-      <div class="stat-tile"><div class="stat-label">打到止损 CL</div><div class="stat-value neg">${fmt(xLossAtCL)} USDT</div></div>
+      <div class="stat-tile wide"><div class="stat-label">应开仓位 Lot Size</div><div class="stat-value gold">${fmt(xLot)} 手</div></div>
+      <div class="stat-tile"><div class="stat-label">打到止盈 TP</div><div class="stat-value pos">毛利润 ${fmt(xGrossTP)} USDT</div></div>
+      <div class="stat-tile"><div class="stat-label">打到止损 CL</div><div class="stat-value neg">亏损 ${fmt(xLossAtCL)} USDT</div></div>
     </div>
   `;
 });
