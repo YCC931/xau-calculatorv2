@@ -584,8 +584,8 @@ document.querySelectorAll('[data-tier]').forEach(btn=>{
   });
 });
 
-// Apply saved defaults (if any) for the initially active tier on page load
-applyTierDefaults(currentTier, false);
+// Apply saved defaults (if any) for the initially active tier on page load happens
+// at the very end of the script (see bottom) so all variables are initialized first.
 
 document.querySelectorAll('.split-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -833,6 +833,10 @@ async function loadNews(){
 
 loadNews();
 setInterval(loadNews, 600000); // every 10 min
+
+// Apply saved defaults (if any) for the initially active tier — placed at the very
+// end of the script so every variable/function it depends on is already initialized.
+applyTierDefaults(currentTier, false);
 </script>
 </body>
 </html>
