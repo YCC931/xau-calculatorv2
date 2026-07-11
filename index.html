@@ -313,7 +313,12 @@
           <button class="chip-btn" data-tier="2.2">2.2</button>
         </div>
 
-        <div class="preset-strip" id="presetStrip" style="margin-top:14px;"></div>
+        <details class="adv">
+          <summary>详情</summary>
+          <div class="adv-body">
+            <div class="preset-strip" id="presetStrip"></div>
+          </div>
+        </details>
 
         <label style="margin-top:14px;">成本 Audition Fee (USDT)</label>
         <input type="number" id="costInput" value="650" step="1">
@@ -342,6 +347,12 @@
           </div>
           <div class="hint" id="tpDerivedHint">需要在 XAU 账户打到的毛止盈目标：<b id="tpDerivedVal">-</b> USDT</div>
         </div>
+
+        <div class="btn-row" style="margin-top:16px;">
+          <button type="button" class="reset-btn" id="saveDefaultsBtn">💾 保存为我的默认值</button>
+          <button type="button" class="reset-btn" id="restoreDefaultsBtn">↺ 恢复出厂默认</button>
+        </div>
+        <div class="hint" id="savedHint" style="display:none;"></div>
       </div>
 
       <div class="card">
@@ -486,31 +497,95 @@ function renderPresetStrip(){
 renderPresetStrip();
 document.getElementById('costInput').addEventListener('input', updateDerivedTp);
 
+// ---------------- Per-tier saved defaults (localStorage) ----------------
+const STORAGE_PREFIX = 'xauCalc_tierDefaults_';
+
+function loadTierDefaults(tier){
+  try{
+    const raw = localStorage.getItem(STORAGE_PREFIX+tier);
+    return raw ? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+
+function showSavedHint(msg){
+  const el = document.getElementById('savedHint');
+  el.textContent = msg;
+  el.style.display = 'block';
+  clearTimeout(showSavedHint._t);
+  showSavedHint._t = setTimeout(()=>{ el.style.display='none'; }, 3500);
+}
+
+function applyTierDefaults(tier, forceFactory){
+  const p = presets[tier];
+  const saved = forceFactory ? null : loadTierDefaults(tier);
+
+  document.getElementById('costInput').value = (saved && saved.cost!=null) ? saved.cost : p.cost;
+  document.getElementById('clPoints').value = (saved && saved.clPoints!=null) ? saved.clPoints : p.clPoints;
+  renderPresetStrip();
+  updateClHint();
+
+  if(p.split){
+    document.getElementById('tpFixedWrap').style.display='none';
+    document.getElementById('splitWrap').style.display='block';
+    document.getElementById('walletBalWrap').style.display = p.walletAdjusted ? 'block' : 'none';
+    document.getElementById('netProfit').value = (saved && saved.netProfit!=null) ? saved.netProfit : 2000;
+    if(p.walletAdjusted){
+      document.getElementById('walletBal').value = (saved && saved.walletBal!=null) ? saved.walletBal : 98100;
+    }
+    const ratio = (saved && saved.splitRatio!=null) ? saved.splitRatio : 0.6;
+    document.querySelectorAll('.split-btn').forEach(b=>{
+      b.classList.toggle('active', parseFloat(b.dataset.ratio)===ratio);
+    });
+    currentSplitRatio = ratio;
+  } else {
+    document.getElementById('tpFixedWrap').style.display='block';
+    document.getElementById('splitWrap').style.display='none';
+    document.getElementById('tpTargetFixed').value = (saved && saved.tp!=null) ? saved.tp : p.tp;
+    lastTpChecked = null;
+    checkTpPolicy();
+  }
+  updateDerivedTp();
+}
+
+document.getElementById('saveDefaultsBtn').addEventListener('click', ()=>{
+  const p = presets[currentTier];
+  const settings = {
+    cost: parseFloat(document.getElementById('costInput').value)||0,
+    clPoints: parseFloat(document.getElementById('clPoints').value)||0,
+  };
+  if(p.split){
+    settings.netProfit = parseFloat(document.getElementById('netProfit').value)||0;
+    settings.splitRatio = currentSplitRatio;
+    if(p.walletAdjusted) settings.walletBal = parseFloat(document.getElementById('walletBal').value)||0;
+  } else {
+    settings.tp = parseFloat(document.getElementById('tpTargetFixed').value)||0;
+  }
+  try{
+    localStorage.setItem(STORAGE_PREFIX+currentTier, JSON.stringify(settings));
+    showSavedHint(`✅ 已保存 ${currentTier} 档位的默认值(存在本机浏览器)`);
+  }catch(e){
+    showSavedHint('⚠️ 保存失败，可能是浏览器隐私/无痕模式限制了本地存储');
+  }
+});
+
+document.getElementById('restoreDefaultsBtn').addEventListener('click', ()=>{
+  try{ localStorage.removeItem(STORAGE_PREFIX+currentTier); }catch(e){}
+  applyTierDefaults(currentTier, true);
+  showSavedHint(`↺ 已恢复 ${currentTier} 档位的出厂默认值`);
+});
+
 // ---------------- Tier switching ----------------
 document.querySelectorAll('[data-tier]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('[data-tier]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentTier = btn.dataset.tier;
-    const p = presets[currentTier];
-    document.getElementById('costInput').value = p.cost;
-    document.getElementById('clPoints').value = p.clPoints;
-    renderPresetStrip();
-    updateClHint();
-    if(p.split){
-      document.getElementById('tpFixedWrap').style.display='none';
-      document.getElementById('splitWrap').style.display='block';
-      document.getElementById('walletBalWrap').style.display = p.walletAdjusted ? 'block' : 'none';
-    } else {
-      document.getElementById('tpFixedWrap').style.display='block';
-      document.getElementById('splitWrap').style.display='none';
-      document.getElementById('tpTargetFixed').value = p.tp;
-      lastTpChecked = null;
-      checkTpPolicy();
-    }
-    updateDerivedTp();
+    applyTierDefaults(currentTier, false);
   });
 });
+
+// Apply saved defaults (if any) for the initially active tier on page load
+applyTierDefaults(currentTier, false);
 
 document.querySelectorAll('.split-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
