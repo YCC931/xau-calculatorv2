@@ -535,6 +535,7 @@ function showSavedHint(msg){
 function applyTierDefaults(tier, forceFactory){
   const p = presets[tier];
   const saved = forceFactory ? null : loadTierDefaults(tier);
+  console.info('[applyTierDefaults]', tier, 'forceFactory=', forceFactory, 'saved=', saved);
 
   document.getElementById('costInput').value = (saved && saved.cost!=null) ? saved.cost : p.cost;
   document.getElementById('clPoints').value = (saved && saved.clPoints!=null) ? saved.clPoints : p.clPoints;
@@ -599,14 +600,27 @@ document.getElementById('restoreDefaultsBtn').addEventListener('click', ()=>{
 });
 
 // ---------------- Tier switching ----------------
+const LAST_TIER_KEY = 'xauCalc_lastTier';
 document.querySelectorAll('[data-tier]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('[data-tier]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentTier = btn.dataset.tier;
+    try{ localStorage.setItem(LAST_TIER_KEY, currentTier); }catch(e){}
     applyTierDefaults(currentTier, false);
   });
 });
+
+// Restore last-selected tier (if any) before applying its saved defaults below.
+try{
+  const lastTier = localStorage.getItem(LAST_TIER_KEY);
+  if(lastTier && presets[lastTier]){
+    currentTier = lastTier;
+    document.querySelectorAll('[data-tier]').forEach(b=>{
+      b.classList.toggle('active', b.dataset.tier===lastTier);
+    });
+  }
+}catch(e){}
 
 // Apply saved defaults (if any) for the initially active tier on page load happens
 // at the very end of the script (see bottom) so all variables are initialized first.
@@ -860,7 +874,11 @@ setInterval(loadNews, 600000); // every 10 min
 
 // Apply saved defaults (if any) for the initially active tier — placed at the very
 // end of the script so every variable/function it depends on is already initialized.
-applyTierDefaults(currentTier, false);
+try{
+  applyTierDefaults(currentTier, false);
+}catch(e){
+  console.error('[applyTierDefaults on load failed]', e);
+}
 </script>
 </body>
 </html>
