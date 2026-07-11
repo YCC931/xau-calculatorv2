@@ -587,8 +587,11 @@ document.getElementById('saveDefaultsBtn').addEventListener('click', ()=>{
   }
   try{
     localStorage.setItem(STORAGE_PREFIX+currentTier, JSON.stringify(settings));
+    const verify = localStorage.getItem(STORAGE_PREFIX+currentTier);
+    console.info('[saveDefaults] wrote key=', STORAGE_PREFIX+currentTier, 'value=', settings, 'readback=', verify);
     showSavedHint(`✅ 已保存 ${currentTier} 档位的默认值(存在本机浏览器)`);
   }catch(e){
+    console.error('[saveDefaults] failed', e);
     showSavedHint('⚠️ 保存失败，可能是浏览器隐私/无痕模式限制了本地存储');
   }
 });
