@@ -295,7 +295,7 @@
         <div class="preset-strip" id="presetStrip" style="margin-top:14px;"></div>
 
         <label style="margin-top:14px;">成本 Audition Fee (USDT)</label>
-        <input type="number" id="costInput" value="550" step="1">
+        <input type="number" id="costInput" value="650" step="1">
 
         <div id="tpFixedWrap" class="subpanel">
           <div class="subpanel-title">止盈目标</div>
@@ -308,10 +308,10 @@
           <div class="subpanel-title">止盈目标（自动计算）</div>
           <div id="walletBalWrap" style="display:none;">
             <label>钱包余额 Wallet Balance (USDT)</label>
-            <input type="number" id="walletBal" value="90000">
+            <input type="number" id="walletBal" value="98100">
           </div>
           <label>净利润目标 Net Profit (USDT)</label>
-          <input type="number" id="netProfit" value="3000">
+          <input type="number" id="netProfit" value="2000">
           <label>分成 Split</label>
           <div class="btn-row">
             <button class="chip-btn split-btn active" data-ratio="0.6">Weekly<br>60%</button>
@@ -377,10 +377,10 @@
 <script>
 // ---------------- Presets ----------------
 const presets = {
-  '1.1': {cost:550, maxDD:6, damageCost:2.5, tp:5510, split:false},
-  '1.2': {cost:550, maxDD:6, damageCost:2.5, tp:4510, split:false},
-  '2.1': {cost:550, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:false},
-  '2.2': {cost:550, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:true},
+  '1.1': {cost:650, maxDD:6, damageCost:2.5, tp:5510, split:false},
+  '1.2': {cost:650, maxDD:6, damageCost:2.5, tp:4510, split:false},
+  '2.1': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:false},
+  '2.2': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:true},
 };
 let currentTier = '1.1';
 let currentDir = 'long';
@@ -448,7 +448,9 @@ function computeGrossTarget(p, cost, entry, clPoints){
 
   const denom = currentSplitRatio - k;
   if(denom<=0) return NaN; // impossible configuration (hedge loss eats the whole split)
-  const G = (net - shortfall*(1-currentSplitRatio) + k*feeTotal) / denom;
+  // Real payout from the firm = (G - shortfall) * splitRatio  (shortfall recovery itself is
+  // NOT paid out — it only restores the account to its funded balance; it is not withdrawable).
+  const G = (net + shortfall*currentSplitRatio + k*feeTotal) / denom;
   return G;
 }
 
