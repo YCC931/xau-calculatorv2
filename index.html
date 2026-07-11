@@ -345,7 +345,7 @@
             <button class="chip-btn split-btn" data-ratio="1.0">Monthly<br>100%</button>
             <button class="chip-btn split-btn" data-ratio="0.9">On demand<br>90%</button>
           </div>
-          <div class="hint" id="tpDerivedHint">需要在 XAU 账户打到的毛止盈目标：<b id="tpDerivedVal">-</b> USDT</div>
+          <div class="hint" id="tpDerivedHint">需要在 XAU 账户打到的止盈目标：<b id="tpDerivedVal">-</b> USDT</div>
         </div>
 
         <div class="btn-row" style="margin-top:16px;">
@@ -451,22 +451,21 @@ function getCost(){
   return parseFloat(document.getElementById('costInput').value) || 0;
 }
 
-function xTargetFor(p, cost){
-  return cost * (p.damageCost / p.maxDD);
+function xTargetFor(p, cost, damageCost){
+  return cost * (damageCost / p.maxDD);
 }
 
 // For split tiers (2.1/2.2): solve the account's gross TP target (tpTarget) so that
 // the trader's REAL take-home (firm payout minus the simultaneous X Exchange hedge
 // loss at CL) equals the net profit they actually asked for.
-function computeGrossTarget(p, cost, entry, clPoints){
-  const damageCost = p.damageCost;
+function computeGrossTarget(p, cost, entry, clPoints, damageCost){
   const maxDD = p.maxDD;
   const riskAmount = WALLET*damageCost/100;
   const riskPerLot = clPoints*CONTRACT + FEE_FF;
   const lot = riskAmount/riskPerLot;
   const feeTotal = lot*FEE_FF;
 
-  const xTarget = xTargetFor(p, cost);
+  const xTarget = xTargetFor(p, cost, damageCost);
   const xPerLotGross = clPoints*CONTRACT;
   const xLot = xTarget/(xPerLotGross-FEE_X);
   const k = xLot/lot; // ratio of hedge loss to gross profit
@@ -486,13 +485,31 @@ function computeGrossTarget(p, cost, entry, clPoints){
   return G;
 }
 
+// Damage Cost is editable (hidden in 详情) only for tiers 1.2 and 2.2; other tiers use the fixed preset value.
+const DAMAGE_COST_EDITABLE_TIERS = ['1.2','2.2'];
+function getDamageCost(){
+  const p = presets[currentTier];
+  if(DAMAGE_COST_EDITABLE_TIERS.includes(currentTier)){
+    const el = document.getElementById('damageCostInput');
+    if(el) return parseFloat(el.value) || p.damageCost;
+  }
+  return p.damageCost;
+}
+
 function renderPresetStrip(){
   const p = presets[currentTier];
+  const editable = DAMAGE_COST_EDITABLE_TIERS.includes(currentTier);
+  const damageCostHtml = editable
+    ? `<span class="preset-pill">Damage Cost <input type="number" id="damageCostInput" value="${p.damageCost}" step="0.1" style="width:52px;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:700;padding:0;">%</span>`
+    : `<span class="preset-pill">Damage Cost <b>${p.damageCost}%</b></span>`;
   document.getElementById('presetStrip').innerHTML = `
     <span class="preset-pill">Max DD <b>${p.maxDD}%</b></span>
-    <span class="preset-pill">Damage Cost <b>${p.damageCost}%</b></span>
+    ${damageCostHtml}
     <span class="preset-pill">钱包 <b>100,000</b> USDT</span>
   `;
+  if(editable){
+    document.getElementById('damageCostInput').addEventListener('input', updateDerivedTp);
+  }
 }
 renderPresetStrip();
 document.getElementById('costInput').addEventListener('input', updateDerivedTp);
@@ -522,6 +539,10 @@ function applyTierDefaults(tier, forceFactory){
   document.getElementById('costInput').value = (saved && saved.cost!=null) ? saved.cost : p.cost;
   document.getElementById('clPoints').value = (saved && saved.clPoints!=null) ? saved.clPoints : p.clPoints;
   renderPresetStrip();
+  if(DAMAGE_COST_EDITABLE_TIERS.includes(tier)){
+    const dcEl = document.getElementById('damageCostInput');
+    if(dcEl) dcEl.value = (saved && saved.damageCost!=null) ? saved.damageCost : p.damageCost;
+  }
   updateClHint();
 
   if(p.split){
@@ -553,6 +574,9 @@ document.getElementById('saveDefaultsBtn').addEventListener('click', ()=>{
     cost: parseFloat(document.getElementById('costInput').value)||0,
     clPoints: parseFloat(document.getElementById('clPoints').value)||0,
   };
+  if(DAMAGE_COST_EDITABLE_TIERS.includes(currentTier)){
+    settings.damageCost = getDamageCost();
+  }
   if(p.split){
     settings.netProfit = parseFloat(document.getElementById('netProfit').value)||0;
     settings.splitRatio = currentSplitRatio;
@@ -608,7 +632,7 @@ function updateDerivedTp(){
     document.getElementById('tpDerivedVal').textContent = '-';
     return;
   }
-  const tp = computeGrossTarget(p, cost, entry, clPoints);
+  const tp = computeGrossTarget(p, cost, entry, clPoints, getDamageCost());
   document.getElementById('tpDerivedVal').textContent = isFinite(tp) ? fmt(tp) : '⚠️ 配置无解(对冲亏损超过净利润)';
 }
 updateDerivedTp();
@@ -674,14 +698,14 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
 // ---------------- Calculate ----------------
 document.getElementById('calcBtn').addEventListener('click', ()=>{
   const p = presets[currentTier];
-  const damageCost = p.damageCost;
+  const damageCost = getDamageCost();
   const entry = parseFloat(document.getElementById('entry').value);
   const clPoints = parseFloat(document.getElementById('clPoints').value);
-  const xTarget = xTargetFor(p, getCost());
+  const xTarget = xTargetFor(p, getCost(), damageCost);
 
   let tpTarget;
   if(p.split){
-    tpTarget = computeGrossTarget(p, getCost(), entry, clPoints);
+    tpTarget = computeGrossTarget(p, getCost(), entry, clPoints, damageCost);
   } else {
     tpTarget = parseFloat(document.getElementById('tpTargetFixed').value)||0;
   }
@@ -692,7 +716,7 @@ document.getElementById('calcBtn').addEventListener('click', ()=>{
     return;
   }
 
-  if(!p.split && tpTarget>TP_MAX){
+  if(!p.split && tpTarget>=TP_MAX){
     document.getElementById('xauResults').innerHTML = `<div class="empty-state">⚠️ 止盈目标不能超过 ${TP_MAX} USDT，请调低后再计算</div>`;
     document.getElementById('xResults').innerHTML = '';
     return;
