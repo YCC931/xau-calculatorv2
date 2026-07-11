@@ -356,7 +356,7 @@
         <input type="number" id="entry" value="2350" step="0.01">
 
         <label>止损点数 CL Points</label>
-        <input type="number" id="clPoints" value="10" step="0.1">
+        <input type="number" id="clPoints" value="13" step="0.1">
         <div class="hint" id="clPriceHint">止损价将自动计算</div>
 
         <div class="btn-pair">
@@ -398,10 +398,10 @@
 <script>
 // ---------------- Presets ----------------
 const presets = {
-  '1.1': {cost:650, maxDD:6, damageCost:2.5, tp:5510, split:false},
-  '1.2': {cost:650, maxDD:6, damageCost:2.5, tp:4510, split:false},
-  '2.1': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:false},
-  '2.2': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:true},
+  '1.1': {cost:650, maxDD:6, damageCost:2.5, tp:5510, split:false, clPoints:13},
+  '1.2': {cost:650, maxDD:6, damageCost:2.5, tp:4510, split:false, clPoints:13},
+  '2.1': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:false, clPoints:19},
+  '2.2': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:true, clPoints:19},
 };
 let currentTier = '1.1';
 let currentDir = 'long';
@@ -494,7 +494,9 @@ document.querySelectorAll('[data-tier]').forEach(btn=>{
     currentTier = btn.dataset.tier;
     const p = presets[currentTier];
     document.getElementById('costInput').value = p.cost;
+    document.getElementById('clPoints').value = p.clPoints;
     renderPresetStrip();
+    updateClHint();
     if(p.split){
       document.getElementById('tpFixedWrap').style.display='none';
       document.getElementById('splitWrap').style.display='block';
