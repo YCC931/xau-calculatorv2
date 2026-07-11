@@ -423,6 +423,12 @@ const FEE_FF = 5;      // fundingpips fee per lot
 const FEE_X = 6;       // X exchange fee per lot
 const CONTRACT = 100;  // XAU contract size per lot
 
+function safeLog(...args){
+  try{
+    if(typeof console!=='undefined' && typeof console.log==='function') console.log(...args);
+  }catch(e){}
+}
+
 function fmt(n){ if(!isFinite(n)) return '-'; return n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 function animateResults(containerId){
@@ -487,6 +493,23 @@ function computeGrossTarget(p, cost, entry, clPoints, damageCost){
 
 // Damage Cost is editable (hidden in 详情) only for tiers 1.2 and 2.2; other tiers use the fixed preset value.
 const DAMAGE_COST_EDITABLE_TIERS = ['1.2','2.2'];
+const DAMAGE_COST_MAX = {'1.2': 3, '2.2': 2};
+const DAMAGE_COST_REASON = {
+  '1.2': '每日最大亏损限制 3%（以开盘余额或净值中较高者为准）',
+  '2.2': '单笔交易亏损达到或超过 $2,000 即视为违规'
+};
+let lastDamageCostChecked = null;
+function checkDamageCostPolicy(){
+  if(!DAMAGE_COST_EDITABLE_TIERS.includes(currentTier)) return;
+  const max = DAMAGE_COST_MAX[currentTier];
+  const val = parseFloat(document.getElementById('damageCostInput').value)||0;
+  if(val===lastDamageCostChecked) return;
+  lastDamageCostChecked = val;
+  if(val>max){
+    showModal(`⚠️ ${DAMAGE_COST_REASON[currentTier]}，Damage Cost 不能超过 <b>${max}%</b>，请调整后再计算`, true);
+  }
+}
+
 function getDamageCost(){
   const p = presets[currentTier];
   if(DAMAGE_COST_EDITABLE_TIERS.includes(currentTier)){
@@ -509,6 +532,8 @@ function renderPresetStrip(){
   `;
   if(editable){
     document.getElementById('damageCostInput').addEventListener('input', updateDerivedTp);
+    document.getElementById('damageCostInput').addEventListener('change', checkDamageCostPolicy);
+    lastDamageCostChecked = null;
   }
 }
 renderPresetStrip();
@@ -535,7 +560,6 @@ function showSavedHint(msg){
 function applyTierDefaults(tier, forceFactory){
   const p = presets[tier];
   const saved = forceFactory ? null : loadTierDefaults(tier);
-  console.info('[applyTierDefaults]', tier, 'forceFactory=', forceFactory, 'saved=', saved);
 
   document.getElementById('costInput').value = (saved && saved.cost!=null) ? saved.cost : p.cost;
   document.getElementById('clPoints').value = (saved && saved.clPoints!=null) ? saved.clPoints : p.clPoints;
@@ -587,11 +611,9 @@ document.getElementById('saveDefaultsBtn').addEventListener('click', ()=>{
   }
   try{
     localStorage.setItem(STORAGE_PREFIX+currentTier, JSON.stringify(settings));
-    const verify = localStorage.getItem(STORAGE_PREFIX+currentTier);
-    console.info('[saveDefaults] wrote key=', STORAGE_PREFIX+currentTier, 'value=', settings, 'readback=', verify);
     showSavedHint(`✅ 已保存 ${currentTier} 档位的默认值(存在本机浏览器)`);
   }catch(e){
-    console.error('[saveDefaults] failed', e);
+    safeLog('[saveDefaults] failed', e);
     showSavedHint('⚠️ 保存失败，可能是浏览器隐私/无痕模式限制了本地存储');
   }
 });
@@ -716,6 +738,13 @@ document.getElementById('resetBtn').addEventListener('click', ()=>{
 document.getElementById('calcBtn').addEventListener('click', ()=>{
   const p = presets[currentTier];
   const damageCost = getDamageCost();
+
+  if(DAMAGE_COST_EDITABLE_TIERS.includes(currentTier) && damageCost>DAMAGE_COST_MAX[currentTier]){
+    document.getElementById('xauResults').innerHTML = `<div class="empty-state">⚠️ ${DAMAGE_COST_REASON[currentTier]}，Damage Cost 不能超过 ${DAMAGE_COST_MAX[currentTier]}%，请调整后再计算</div>`;
+    document.getElementById('xResults').innerHTML = '';
+    return;
+  }
+
   const entry = parseFloat(document.getElementById('entry').value);
   const clPoints = parseFloat(document.getElementById('clPoints').value);
   const xTarget = xTargetFor(p, getCost(), damageCost);
@@ -821,10 +850,10 @@ async function loadNews(){
   for(const src of sources){
     try{
       const res = await fetch(src);
-      if(!res.ok){ console.warn('[news] non-ok from', src, res.status); continue; }
+      if(!res.ok){ safeLog('[news] non-ok from', src, res.status); continue; }
       data = await res.json();
-      if(data){ console.info('[news] success from', src); break; }
-    } catch(err){ console.warn('[news] failed from', src, err); }
+      if(data){ safeLog('[news] success from', src); break; }
+    } catch(err){ safeLog('[news] failed from', src, err); }
   }
 
   try{
@@ -880,7 +909,7 @@ setInterval(loadNews, 600000); // every 10 min
 try{
   applyTierDefaults(currentTier, false);
 }catch(e){
-  console.error('[applyTierDefaults on load failed]', e);
+  safeLog('[applyTierDefaults on load failed]', e);
 }
 </script>
 </body>
