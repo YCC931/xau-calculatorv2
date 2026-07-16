@@ -36,7 +36,7 @@
   }
   .wrap{max-width:1180px;margin:0 auto;}
 
-  header{display:flex;flex-direction:column;gap:14px;margin-bottom:24px;}
+  header{display:flex;flex-direction:column;gap:14px;margin-bottom:24px;animation:riseIn .4s cubic-bezier(.16,1,.3,1) backwards;}
   header .top-row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
   header .bar{width:9px;height:9px;background:var(--gold-bright);border-radius:50%;align-self:center;}
   h1{
@@ -53,13 +53,25 @@
   }
   @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
 
+  ::-webkit-scrollbar{width:10px;height:10px;}
+  ::-webkit-scrollbar-track{background:var(--bg);}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:6px;border:2px solid var(--bg);}
+  ::-webkit-scrollbar-thumb:hover{background:#374063;}
+  *{scrollbar-color:var(--line) var(--bg);scrollbar-width:thin;}
+
+  @keyframes riseIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
   /* ---- news banner ---- */
   .news{
-    border:1px solid var(--line);
-    background:var(--panel);
+    border:1px solid transparent;
+    background:
+      linear-gradient(var(--panel), var(--panel)) padding-box,
+      linear-gradient(155deg, rgba(111,168,255,0.28), rgba(111,168,255,0.02) 40%) border-box;
     border-radius:var(--radius);
     padding:14px 16px;
     margin-bottom:20px;
+    box-shadow:0 12px 30px -10px rgba(0,0,0,0.5);
+    animation:riseIn .45s cubic-bezier(.16,1,.3,1) backwards;
   }
   .news.alert{border-color:var(--danger);background:linear-gradient(180deg, rgba(255,77,77,0.14), rgba(255,77,77,0.03));box-shadow:0 0 20px rgba(255,77,77,0.15);}
   .news-head{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);margin-bottom:8px;font-family:'JetBrains Mono',monospace;}
@@ -67,13 +79,14 @@
   .news.alert .dot{background:var(--danger);animation:pulse 1.2s infinite;}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
   .news-alert-text{font-size:14px;font-weight:600;color:var(--danger);margin-bottom:6px;}
-  .news-list{display:flex;flex-wrap:wrap;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;}
+  .news-list{display:flex;flex-direction:column;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12px;}
   .news-chip{
     border:1px solid var(--line);
-    padding:4px 9px;
-    border-radius:20px;
+    padding:6px 12px;
+    border-radius:10px;
     color:var(--text-dim);
-    white-space:nowrap;
+    white-space:normal;
+    line-height:1.5;
   }
   .news-chip.soon{border-color:var(--danger);color:var(--danger);}
   .news-empty{color:var(--text-dim);font-size:13px;font-family:'JetBrains Mono',monospace;}
@@ -83,14 +96,21 @@
   @media (max-width:880px){.grid{grid-template-columns:1fr;}}
 
   .card{
-    background:var(--panel);
-    border:1px solid var(--line);
+    background:
+      linear-gradient(var(--panel), var(--panel)) padding-box,
+      linear-gradient(155deg, rgba(111,168,255,0.28), rgba(111,168,255,0.02) 40%, rgba(111,168,255,0.06) 100%) border-box;
+    border:1px solid transparent;
     border-radius:16px;
     padding:18px;
-    box-shadow:0 4px 20px rgba(0,0,0,0.3);
-    transition:border-color .2s, box-shadow .2s;
+    box-shadow:0 1px 0 rgba(255,255,255,0.03) inset, 0 12px 30px -8px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+    transition:box-shadow .2s, transform .2s;
+    animation:riseIn .5s cubic-bezier(.16,1,.3,1) backwards;
   }
-  .card:hover{border-color:#333955;}
+  .card:hover{box-shadow:0 1px 0 rgba(255,255,255,0.04) inset, 0 16px 36px -8px rgba(0,0,0,0.55), 0 2px 8px rgba(0,0,0,0.35);}
+  .grid > div:first-child .card:nth-child(1){animation-delay:.02s;}
+  .grid > div:first-child .card:nth-child(2){animation-delay:.08s;}
+  .grid > div:last-child .card:nth-child(1){animation-delay:.05s;}
+  .grid > div:last-child .card:nth-child(2){animation-delay:.11s;}
   .card + .card{margin-top:16px;}
   .card h2{
     font-size:11px;text-transform:uppercase;letter-spacing:1.8px;
@@ -116,6 +136,7 @@
     padding:9px 8px;border-radius:11px;font-size:13px;font-weight:600;cursor:pointer;
     font-family:'JetBrains Mono',monospace;transition:all .15s;
   }
+  .chip-btn:active{transform:scale(0.96);}
   .chip-btn:hover{border-color:var(--gold-bright);color:var(--text);}
   .chip-btn.long, .chip-btn.short{font-weight:700;}
   .chip-btn.active{
@@ -192,12 +213,75 @@
   details.adv summary::before{content:"▸";color:var(--gold-dim);transition:transform .15s;}
   details.adv[open] summary::before{transform:rotate(90deg);}
   details.adv .adv-body{padding-top:10px;}
-  .preset-strip{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .field-grid{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(94px, 1fr));
+    gap:8px;margin-top:10px;
+  }
+  .preset-strip{display:contents;}
+  #tpFixedWrap{display:contents;}
+  #walletBalWrap{display:contents;}
   .preset-pill{
     background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
     padding:5px 11px;font-size:11.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;
   }
   .preset-pill b{color:var(--text);font-weight:600;}
+
+  /* ---- mini field cards: label on top, editable number below ---- */
+  .mini-field{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:8px 12px 9px;min-width:92px;
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .mini-field:hover{border-color:#333955;}
+  .mini-field:focus-within{border-color:var(--gold-bright);box-shadow:0 0 0 3px rgba(111,168,255,0.12);}
+  .mini-field .mini-label{
+    font-size:10px;color:var(--text-dim);text-transform:uppercase;
+    letter-spacing:0.5px;margin-bottom:4px;white-space:nowrap;
+  }
+  .mini-field .mini-row{display:flex;align-items:baseline;gap:4px;}
+  .mini-field .mini-input{
+    background:transparent;border:none;color:var(--text);font-weight:700;
+    font-family:'JetBrains Mono',monospace;font-size:15px;padding:0;
+    width:100%;min-width:0;-moz-appearance:textfield;
+  }
+  .mini-field .mini-input:focus{outline:none;color:var(--gold-bright);}
+  .mini-field .mini-input::-webkit-inner-spin-button,
+  .mini-field .mini-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+  .mini-field .mini-unit{font-size:10.5px;color:var(--text-dim);flex:none;}
+  .mini-field.readonly{opacity:0.9;}
+  .mini-field .mini-static{
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--text);
+  }
+
+  /* ---- split dropdown (collapsible select) ---- */
+  .split-dropdown{
+    margin-top:6px;background:var(--panel-2);border:1px solid var(--line);
+    border-radius:12px;overflow:hidden;
+  }
+  .split-dropdown summary{
+    list-style:none;cursor:pointer;padding:10px 14px;
+    font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;color:var(--text);
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .split-dropdown summary::-webkit-details-marker{display:none;}
+  .split-dropdown summary::after{content:"▾";color:var(--gold-dim);font-size:11px;}
+  .split-dropdown[open] summary::after{content:"▴";}
+  .split-options{border-top:1px solid var(--line);}
+  .split-option{
+    padding:10px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;
+    color:var(--text-dim);cursor:pointer;transition:background .12s, color .12s;
+  }
+  .split-option:hover{background:var(--panel);color:var(--text);}
+  .split-option.active{color:var(--gold-bright);font-weight:700;}
+  .split-option + .split-option{border-top:1px solid var(--line);}
+
+  /* ---- add / delete custom tier ---- */
+  .add-tier-btn{flex:0 0 auto;min-width:38px;font-size:15px;color:var(--gold-bright);font-weight:700;}
+  .tier-del{
+    margin-left:6px;opacity:0.55;font-weight:400;display:inline-block;
+    transition:opacity .12s, color .12s;
+  }
+  .tier-del:hover{opacity:1;color:var(--short);}
 
   /* ---- sub panel (split / hedge groupings) ---- */
   .subpanel{
@@ -207,6 +291,19 @@
   .subpanel-title{font-size:11.5px;color:var(--gold-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;}
   .subpanel label{margin-top:10px;}
   .subpanel label:first-of-type{margin-top:0;}
+
+  /* Compact mode inside the collapsible 详情 panel: strip the extra boxed
+     framing so it reads as one light group of fields, not stacked cards. */
+  details.adv .adv-body{padding-top:4px;}
+  details.adv .adv-body label{margin:10px 0 5px;font-size:12px;}
+  details.adv .adv-body label:first-of-type{margin-top:8px;}
+  details.adv .adv-body input[type=number]{padding:7px 10px;font-size:13px;}
+  details.adv .adv-body .subpanel{
+    background:none;border:none;border-top:1px dashed var(--line);
+    border-radius:0;padding:10px 0 0;margin-top:10px;
+  }
+  details.adv .adv-body .subpanel-title{font-size:10.5px;margin-bottom:6px;}
+  details.adv .adv-body .hint{font-size:11px;}
 
   /* ---- stat tiles for results ---- */
   .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -306,47 +403,55 @@
     <div>
       <div class="card">
         <h2>关卡 Level</h2>
-        <div class="btn-row">
-          <button class="chip-btn active" data-tier="1.1">1.1</button>
-          <button class="chip-btn" data-tier="1.2">1.2</button>
-          <button class="chip-btn" data-tier="2.1">2.1</button>
-          <button class="chip-btn" data-tier="2.2">2.2</button>
-        </div>
+        <div class="btn-row" id="tierBtnRow"></div>
 
         <details class="adv">
           <summary>详情</summary>
           <div class="adv-body">
-            <div class="preset-strip" id="presetStrip"></div>
+            <div class="field-grid">
+              <div class="preset-strip" id="presetStrip"></div>
+
+              <div class="mini-field">
+                <div class="mini-label">成本</div>
+                <div class="mini-row"><input type="number" id="costInput" class="mini-input" value="650" step="1"><span class="mini-unit">USDT</span></div>
+              </div>
+
+              <div id="tpFixedWrap">
+                <div class="mini-field">
+                  <div class="mini-label">止盈目标</div>
+                  <div class="mini-row"><input type="number" id="tpTargetFixed" class="mini-input" value="4510"><span class="mini-unit">USDT</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="hint" id="tpPolicyHint" style="display:none;"></div>
+
+            <div id="splitWrap" style="display:none;">
+              <div class="field-grid">
+                <div id="walletBalWrap" style="display:none;">
+                  <div class="mini-field">
+                    <div class="mini-label">钱包余额</div>
+                    <div class="mini-row"><input type="number" id="walletBal" class="mini-input" value="100000"><span class="mini-unit">USDT</span></div>
+                  </div>
+                </div>
+                <div class="mini-field">
+                  <div class="mini-label">净利润目标</div>
+                  <div class="mini-row"><input type="number" id="netProfit" class="mini-input" value="2000"><span class="mini-unit">USDT</span></div>
+                </div>
+              </div>
+              <label style="margin-top:12px;">分成 Split</label>
+              <details class="split-dropdown" id="splitDropdown">
+                <summary id="splitSummary">Weekly · 60%</summary>
+                <div class="split-options">
+                  <div class="split-option active" data-ratio="0.6">Weekly · 60%</div>
+                  <div class="split-option" data-ratio="0.8">Biweekly · 80%</div>
+                  <div class="split-option" data-ratio="1.0">Monthly · 100%</div>
+                  <div class="split-option" data-ratio="0.9">On demand · 90%</div>
+                </div>
+              </details>
+              <div class="hint" id="tpDerivedHint">需要在 XAU 账户打到的止盈目标：<b id="tpDerivedVal">-</b> USDT</div>
+            </div>
           </div>
         </details>
-
-        <label style="margin-top:14px;">成本 Audition Fee (USDT)</label>
-        <input type="number" id="costInput" value="650" step="1">
-
-        <div id="tpFixedWrap" class="subpanel">
-          <div class="subpanel-title">止盈目标</div>
-          <label>止盈目标 TP (USDT)</label>
-          <input type="number" id="tpTargetFixed" value="5510">
-          <div class="hint" id="tpPolicyHint" style="display:none;"></div>
-        </div>
-
-        <div id="splitWrap" class="subpanel" style="display:none;">
-          <div class="subpanel-title">止盈目标（自动计算）</div>
-          <div id="walletBalWrap" style="display:none;">
-            <label>钱包余额 Wallet Balance (USDT)</label>
-            <input type="number" id="walletBal" value="98100">
-          </div>
-          <label>净利润目标 Net Profit (USDT)</label>
-          <input type="number" id="netProfit" value="2000">
-          <label>分成 Split</label>
-          <div class="btn-row">
-            <button class="chip-btn split-btn active" data-ratio="0.6">Weekly<br>60%</button>
-            <button class="chip-btn split-btn" data-ratio="0.8">Biweekly<br>80%</button>
-            <button class="chip-btn split-btn" data-ratio="1.0">Monthly<br>100%</button>
-            <button class="chip-btn split-btn" data-ratio="0.9">On demand<br>90%</button>
-          </div>
-          <div class="hint" id="tpDerivedHint">需要在 XAU 账户打到的止盈目标：<b id="tpDerivedVal">-</b> USDT</div>
-        </div>
 
         <div class="btn-row" style="margin-top:16px;">
           <button type="button" class="reset-btn" id="saveDefaultsBtn">💾 保存为我的默认值</button>
@@ -406,13 +511,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="chooseFamilyModal">
+  <div class="modal-card" style="max-width:360px;">
+    <div class="modal-icon">➕</div>
+    <div class="modal-text">要新增哪一个关卡？</div>
+    <div class="btn-row" style="margin-top:4px;">
+      <button class="modal-ok" id="chooseFamilyBtn1" style="flex:1;"></button>
+      <button class="modal-ok" id="chooseFamilyBtn2" style="flex:1;"></button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ---------------- Presets ----------------
 const presets = {
-  '1.1': {cost:650, maxDD:6, damageCost:2.5, tp:5510, split:false, clPoints:13},
-  '1.2': {cost:650, maxDD:6, damageCost:2.5, tp:4510, split:false, clPoints:13},
-  '2.1': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:false, clPoints:19},
-  '2.2': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:true, clPoints:19},
+  '1.1': {cost:650, maxDD:6, damageCost:2.5, tp:4510, split:false, clPoints:13},
+  '2.1': {cost:2000, maxDD:6, damageCost:1.9, tp:null, split:true, walletAdjusted:true, clPoints:19},
 };
 let currentTier = '1.1';
 let currentDir = 'long';
@@ -461,7 +575,7 @@ function xTargetFor(p, cost, damageCost){
   return cost * (damageCost / p.maxDD);
 }
 
-// For split tiers (2.1/2.2): solve the account's gross TP target (tpTarget) so that
+// For split tiers: solve the account's gross TP target (tpTarget) so that
 // the trader's REAL take-home (firm payout minus the simultaneous X Exchange hedge
 // loss at CL) equals the net profit they actually asked for.
 function computeGrossTarget(p, cost, entry, clPoints, damageCost){
@@ -491,12 +605,12 @@ function computeGrossTarget(p, cost, entry, clPoints, damageCost){
   return G;
 }
 
-// Damage Cost is editable (hidden in 详情) only for tiers 1.2 and 2.2; other tiers use the fixed preset value.
-const DAMAGE_COST_EDITABLE_TIERS = ['1.2','2.2'];
-const DAMAGE_COST_MAX = {'1.2': 3, '2.2': 2};
+// Damage Cost is editable (hidden in 详情) for both tiers 1.1 and 2.1.
+const DAMAGE_COST_EDITABLE_TIERS = ['1.1','2.1'];
+const DAMAGE_COST_MAX = {'1.1': 3, '2.1': 2};
 const DAMAGE_COST_REASON = {
-  '1.2': '每日最大亏损限制 3%（以开盘余额或净值中较高者为准）',
-  '2.2': '单笔交易亏损达到或超过 $2,000 即视为违规'
+  '1.1': '每日最大亏损限制 3%（以开盘余额或净值中较高者为准）',
+  '2.1': '单笔交易亏损达到或超过 $2,000 即视为违规'
 };
 let lastDamageCostChecked = null;
 function checkDamageCostPolicy(){
@@ -505,8 +619,8 @@ function checkDamageCostPolicy(){
   const val = parseFloat(document.getElementById('damageCostInput').value)||0;
   if(val===lastDamageCostChecked) return;
   lastDamageCostChecked = val;
-  if(val>max){
-    showModal(`⚠️ ${DAMAGE_COST_REASON[currentTier]}，Damage Cost 不能超过 <b>${max}%</b>，请调整后再计算`, true);
+  if(val>=max){
+    showModal(`⚠️ ${DAMAGE_COST_REASON[currentTier]}，Damage Cost 必须低于 <b>${max}%</b>，请调整后再计算`, true);
   }
 }
 
@@ -523,12 +637,12 @@ function renderPresetStrip(){
   const p = presets[currentTier];
   const editable = DAMAGE_COST_EDITABLE_TIERS.includes(currentTier);
   const damageCostHtml = editable
-    ? `<span class="preset-pill">Damage Cost <input type="number" id="damageCostInput" value="${p.damageCost}" step="0.1" style="width:52px;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-weight:700;padding:0;">%</span>`
+    ? `<div class="mini-field"><div class="mini-label">Damage Cost</div><div class="mini-row"><input type="number" id="damageCostInput" class="mini-input" value="${p.damageCost}" step="0.1"><span class="mini-unit">%</span></div></div>`
     : `<span class="preset-pill">Damage Cost <b>${p.damageCost}%</b></span>`;
   document.getElementById('presetStrip').innerHTML = `
-    <span class="preset-pill">Max DD <b>${p.maxDD}%</b></span>
+    <div class="mini-field readonly"><div class="mini-label">Max DD</div><div class="mini-row"><span class="mini-static">${p.maxDD}</span><span class="mini-unit">%</span></div></div>
     ${damageCostHtml}
-    <span class="preset-pill">钱包 <b>100,000</b> USDT</span>
+    <div class="mini-field readonly"><div class="mini-label">钱包</div><div class="mini-row"><span class="mini-static">100,000</span><span class="mini-unit">USDT</span></div></div>
   `;
   if(editable){
     document.getElementById('damageCostInput').addEventListener('input', updateDerivedTp);
@@ -573,22 +687,23 @@ function applyTierDefaults(tier, forceFactory){
   if(p.split){
     document.getElementById('tpFixedWrap').style.display='none';
     document.getElementById('splitWrap').style.display='block';
-    document.getElementById('walletBalWrap').style.display = p.walletAdjusted ? 'block' : 'none';
+    document.getElementById('walletBalWrap').style.display = p.walletAdjusted ? 'contents' : 'none';
     document.getElementById('netProfit').value = (saved && saved.netProfit!=null) ? saved.netProfit : 2000;
     if(p.walletAdjusted){
-      document.getElementById('walletBal').value = (saved && saved.walletBal!=null) ? saved.walletBal : 98100;
+      document.getElementById('walletBal').value = (saved && saved.walletBal!=null) ? saved.walletBal : 100000;
     }
     const ratio = (saved && saved.splitRatio!=null) ? saved.splitRatio : 0.6;
-    document.querySelectorAll('.split-btn').forEach(b=>{
-      b.classList.toggle('active', parseFloat(b.dataset.ratio)===ratio);
+    document.querySelectorAll('.split-option').forEach(o=>{
+      const match = parseFloat(o.dataset.ratio)===ratio;
+      o.classList.toggle('active', match);
+      if(match) document.getElementById('splitSummary').textContent = o.textContent;
     });
     currentSplitRatio = ratio;
   } else {
-    document.getElementById('tpFixedWrap').style.display='block';
+    document.getElementById('tpFixedWrap').style.display='contents';
     document.getElementById('splitWrap').style.display='none';
     document.getElementById('tpTargetFixed').value = (saved && saved.tp!=null) ? saved.tp : p.tp;
-    lastTpChecked = null;
-    checkTpPolicy();
+    lastTpChecked = parseFloat(document.getElementById('tpTargetFixed').value)||0;
   }
   updateDerivedTp();
 }
@@ -624,16 +739,138 @@ document.getElementById('restoreDefaultsBtn').addEventListener('click', ()=>{
   showSavedHint(`↺ 已恢复 ${currentTier} 档位的出厂默认值`);
 });
 
-// ---------------- Tier switching ----------------
-const LAST_TIER_KEY = 'xauCalc_lastTier';
-document.querySelectorAll('[data-tier]').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('[data-tier]').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentTier = btn.dataset.tier;
-    try{ localStorage.setItem(LAST_TIER_KEY, currentTier); }catch(e){}
-    applyTierDefaults(currentTier, false);
+// ---------------- Family clone tiers (1.1→1.2→1.3, 2.1→2.2→2.3) ----------------
+const FAMILY_BASE = {'1':'1.1', '2':'2.1'};
+const MAX_CLONES = 2;
+const familyKey = fam => `xauCalc_familyClones_${fam}`;
+
+function loadFamilyClones(fam){
+  try{
+    const raw = localStorage.getItem(familyKey(fam));
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+function saveFamilyClones(fam, arr){
+  try{ localStorage.setItem(familyKey(fam), JSON.stringify(arr)); }catch(e){}
+}
+function registerClone(id, baseId){
+  const base = presets[baseId];
+  presets[id] = {
+    cost: base.cost, maxDD: base.maxDD, damageCost: base.damageCost,
+    tp: base.tp, split: base.split, walletAdjusted: base.walletAdjusted, clPoints: base.clPoints
+  };
+  if(!DAMAGE_COST_EDITABLE_TIERS.includes(id)) DAMAGE_COST_EDITABLE_TIERS.push(id);
+  DAMAGE_COST_MAX[id] = DAMAGE_COST_MAX[baseId];
+  DAMAGE_COST_REASON[id] = DAMAGE_COST_REASON[baseId] || '自定义关卡设置的上限';
+}
+function makeTierBtn(id, deletable){
+  const btn = document.createElement('button');
+  btn.className = 'chip-btn';
+  btn.dataset.tier = id;
+  btn.innerHTML = deletable ? `${id}<span class="tier-del" data-del="${id}" title="删除这个关卡">×</span>` : id;
+  return btn;
+}
+function renderTierButtons(){
+  const row = document.getElementById('tierBtnRow');
+  row.innerHTML = '';
+  ['1','2'].forEach(fam=>{
+    const base = FAMILY_BASE[fam];
+    row.appendChild(makeTierBtn(base, false));
+    const clones = loadFamilyClones(fam);
+    clones.forEach((id, idx)=>{
+      row.appendChild(makeTierBtn(id, idx===clones.length-1));
+    });
   });
+  const availableFams = ['1','2'].filter(fam=>loadFamilyClones(fam).length<MAX_CLONES);
+  if(availableFams.length>0){
+    const plus = document.createElement('button');
+    plus.type = 'button';
+    plus.id = 'addTierBtn';
+    plus.className = 'chip-btn add-tier-btn';
+    plus.textContent = '＋';
+    plus.title = '新增关卡';
+    row.appendChild(plus);
+  }
+  row.querySelectorAll('[data-tier]').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tier===currentTier);
+  });
+}
+function addClone(fam){
+  const base = FAMILY_BASE[fam];
+  const clones = loadFamilyClones(fam);
+  if(clones.length>=MAX_CLONES) return;
+  const id = `${fam}.${clones.length+2}`;
+  registerClone(id, base);
+  clones.push(id);
+  saveFamilyClones(fam, clones);
+  currentTier = id;
+  try{ localStorage.setItem(LAST_TIER_KEY, currentTier); }catch(e){}
+  renderTierButtons();
+  applyTierDefaults(currentTier, false);
+}
+function nextIdFor(fam){
+  return `${fam}.${loadFamilyClones(fam).length+2}`;
+}
+function openChooseFamilyModal(fams){
+  const btn1 = document.getElementById('chooseFamilyBtn1');
+  const btn2 = document.getElementById('chooseFamilyBtn2');
+  const id1 = nextIdFor(fams[0]);
+  const id2 = nextIdFor(fams[1]);
+  btn1.textContent = `添加 ${id1}`;
+  btn2.textContent = `添加 ${id2}`;
+  btn1.onclick = ()=>{ document.getElementById('chooseFamilyModal').classList.remove('show'); addClone(fams[0]); };
+  btn2.onclick = ()=>{ document.getElementById('chooseFamilyModal').classList.remove('show'); addClone(fams[1]); };
+  document.getElementById('chooseFamilyModal').classList.add('show');
+}
+function deleteClone(id){
+  const fam = id.split('.')[0];
+  const clones = loadFamilyClones(fam);
+  if(clones[clones.length-1]!==id) return; // only the last (topmost) clone can be removed
+  clones.pop();
+  saveFamilyClones(fam, clones);
+  delete presets[id];
+  const idx = DAMAGE_COST_EDITABLE_TIERS.indexOf(id);
+  if(idx>=0) DAMAGE_COST_EDITABLE_TIERS.splice(idx,1);
+  delete DAMAGE_COST_MAX[id];
+  delete DAMAGE_COST_REASON[id];
+  try{ localStorage.removeItem(STORAGE_PREFIX+id); }catch(e){}
+  const wasCurrent = currentTier===id;
+  if(wasCurrent){
+    currentTier = FAMILY_BASE[fam];
+    try{ localStorage.setItem(LAST_TIER_KEY, currentTier); }catch(e){}
+  }
+  renderTierButtons();
+  if(wasCurrent) applyTierDefaults(currentTier, false);
+}
+['1','2'].forEach(fam=>{
+  loadFamilyClones(fam).forEach(id=>registerClone(id, FAMILY_BASE[fam]));
+});
+
+// ---------------- Tier switching (event delegation so dynamic buttons work) ----------------
+const LAST_TIER_KEY = 'xauCalc_lastTier';
+document.getElementById('tierBtnRow').addEventListener('click', (e)=>{
+  const delBtn = e.target.closest('.tier-del');
+  if(delBtn){
+    e.stopPropagation();
+    deleteClone(delBtn.dataset.del);
+    return;
+  }
+  const addBtn = e.target.closest('#addTierBtn');
+  if(addBtn){
+    const availableFams = ['1','2'].filter(fam=>loadFamilyClones(fam).length<MAX_CLONES);
+    if(availableFams.length===1){
+      addClone(availableFams[0]);
+    } else if(availableFams.length===2){
+      openChooseFamilyModal(availableFams);
+    }
+    return;
+  }
+  const btn = e.target.closest('[data-tier]');
+  if(!btn) return;
+  currentTier = btn.dataset.tier;
+  try{ localStorage.setItem(LAST_TIER_KEY, currentTier); }catch(e){}
+  renderTierButtons();
+  applyTierDefaults(currentTier, false);
 });
 
 // Restore last-selected tier (if any) before applying its saved defaults below.
@@ -641,20 +878,20 @@ try{
   const lastTier = localStorage.getItem(LAST_TIER_KEY);
   if(lastTier && presets[lastTier]){
     currentTier = lastTier;
-    document.querySelectorAll('[data-tier]').forEach(b=>{
-      b.classList.toggle('active', b.dataset.tier===lastTier);
-    });
   }
 }catch(e){}
+renderTierButtons();
 
 // Apply saved defaults (if any) for the initially active tier on page load happens
 // at the very end of the script (see bottom) so all variables are initialized first.
 
-document.querySelectorAll('.split-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.split-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentSplitRatio = parseFloat(btn.dataset.ratio);
+document.querySelectorAll('.split-option').forEach(opt=>{
+  opt.addEventListener('click', ()=>{
+    document.querySelectorAll('.split-option').forEach(o=>o.classList.remove('active'));
+    opt.classList.add('active');
+    currentSplitRatio = parseFloat(opt.dataset.ratio);
+    document.getElementById('splitSummary').textContent = opt.textContent;
+    document.getElementById('splitDropdown').removeAttribute('open');
     updateDerivedTp();
   });
 });
@@ -712,8 +949,11 @@ document.getElementById('modalOkBtn').addEventListener('click', hideModal);
 document.getElementById('policyModal').addEventListener('click', (e)=>{
   if(e.target.id==='policyModal') hideModal();
 });
+document.getElementById('chooseFamilyModal').addEventListener('click', (e)=>{
+  if(e.target.id==='chooseFamilyModal') e.currentTarget.classList.remove('show');
+});
 
-// ---------------- Profit Concentration Policy check (1.1/1.2 fixed TP target) ----------------
+// ---------------- Profit Concentration Policy check (1.1 fixed TP target) ----------------
 const TP_WARN = 5510;
 const TP_MAX = 6000;
 let lastTpChecked = null;
@@ -739,8 +979,8 @@ document.getElementById('calcBtn').addEventListener('click', ()=>{
   const p = presets[currentTier];
   const damageCost = getDamageCost();
 
-  if(DAMAGE_COST_EDITABLE_TIERS.includes(currentTier) && damageCost>DAMAGE_COST_MAX[currentTier]){
-    document.getElementById('xauResults').innerHTML = `<div class="empty-state">⚠️ ${DAMAGE_COST_REASON[currentTier]}，Damage Cost 不能超过 ${DAMAGE_COST_MAX[currentTier]}%，请调整后再计算</div>`;
+  if(DAMAGE_COST_EDITABLE_TIERS.includes(currentTier) && damageCost>=DAMAGE_COST_MAX[currentTier]){
+    document.getElementById('xauResults').innerHTML = `<div class="empty-state">⚠️ ${DAMAGE_COST_REASON[currentTier]}，Damage Cost 必须低于 ${DAMAGE_COST_MAX[currentTier]}%，请调整后再计算</div>`;
     document.getElementById('xResults').innerHTML = '';
     return;
   }
@@ -875,11 +1115,21 @@ async function loadNews(){
     if(todaysHigh.length===0){
       listEl.innerHTML = '<span class="news-empty">今天没有 USD 红色高影响新闻</span>';
     } else {
-      listEl.innerHTML = todaysHigh.map(e=>{
-        const diffMin = Math.abs(now-e.time)/60000;
+      // Group events that share the exact same timestamp into one chip
+      const groups = [];
+      todaysHigh.forEach(e=>{
+        const last = groups[groups.length-1];
+        if(last && last.time.getTime()===e.time.getTime()){
+          last.titles.push(e.title);
+        } else {
+          groups.push({ time: e.time, titles: [e.title] });
+        }
+      });
+      listEl.innerHTML = groups.map(g=>{
+        const diffMin = Math.abs(now-g.time)/60000;
         const soon = diffMin<=NEWS_WINDOW_MIN;
-        const t = e.time.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
-        return `<span class="news-chip ${soon?'soon':''}">${t} · ${e.title}</span>`;
+        const t = g.time.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+        return `<span class="news-chip ${soon?'soon':''}">${t} · ${g.titles.join(', ')}</span>`;
       }).join('');
     }
 
