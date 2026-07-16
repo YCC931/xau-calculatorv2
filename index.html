@@ -214,9 +214,10 @@
   details.adv[open] summary::before{transform:rotate(90deg);}
   details.adv .adv-body{padding-top:10px;}
   .field-grid{
-    display:grid;grid-template-columns:repeat(auto-fit, minmax(94px, 1fr));
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(90px, 1fr));
     gap:8px;margin-top:10px;
   }
+  .field-grid > *{min-width:0;}
   .preset-strip{display:contents;}
   #tpFixedWrap{display:contents;}
   #walletBalWrap{display:contents;}
@@ -229,7 +230,7 @@
   /* ---- mini field cards: label on top, editable number below ---- */
   .mini-field{
     background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
-    padding:8px 12px 9px;min-width:92px;
+    padding:8px 12px 9px;min-width:0;overflow:hidden;
     transition:border-color .15s, box-shadow .15s, transform .15s;
   }
   .mini-field:hover{border-color:#333955;}
@@ -237,17 +238,18 @@
   .mini-field .mini-label{
     font-size:10px;color:var(--text-dim);text-transform:uppercase;
     letter-spacing:0.5px;margin-bottom:4px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;
   }
-  .mini-field .mini-row{display:flex;align-items:baseline;gap:4px;}
+  .mini-field .mini-row{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-width:0;}
   .mini-field .mini-input{
     background:transparent;border:none;color:var(--text);font-weight:700;
-    font-family:'JetBrains Mono',monospace;font-size:15px;padding:0;
+    font-family:'JetBrains Mono',monospace;font-size:14px;padding:0;
     width:100%;min-width:0;-moz-appearance:textfield;
   }
   .mini-field .mini-input:focus{outline:none;color:var(--gold-bright);}
   .mini-field .mini-input::-webkit-inner-spin-button,
   .mini-field .mini-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
-  .mini-field .mini-unit{font-size:10.5px;color:var(--text-dim);flex:none;}
+  .mini-field .mini-unit{font-size:10px;color:var(--text-dim);flex:none;}
   .mini-field.readonly{opacity:0.9;}
   .mini-field .mini-static{
     font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;color:var(--text);
